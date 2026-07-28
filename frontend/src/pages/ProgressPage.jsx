@@ -1,8 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Clock, Star, Target } from 'lucide-react';
 import SimpleBarChart from '../components/SimpleBarChart';
+import api from '../lib/api';
 
 export default function ProgressPage() {
+  const [loading, setLoading] = useState(true);
+  const [todos, setTodos] = useState([]);
+  const [quizAttempts, setQuizAttempts] = useState([]);
+
+  // Mock data for charts and tables to maintain UI structure
   const studyTargets = [
     { subject:"Kalkulus II",     jam:14, target:20, color:"#7C3AED" },
     { subject:"Fisika Dasar",    jam:8,  target:16, color:"#06B6D4" },
@@ -25,26 +31,68 @@ export default function ProgressPage() {
   ]);
   const [editingNilai, setEditingNilai] = useState(false);
 
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [todosRes, quizRes] = await Promise.all([
+          api.get('/todos'),
+          api.get('/quiz/attempts')
+        ]);
+        setTodos(todosRes.data);
+        setQuizAttempts(quizRes.data);
+      } catch (error) {
+        console.error("Failed to fetch progress data", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
   const updateNilai = (mk, field, raw) => {
     const val = raw === "" ? null : Math.max(0, Math.min(100, Number(raw)));
     setNilai((prev) => prev.map((n) => (n.mk === mk ? { ...n, [field]: val } : n)));
   };
 
-  const rataRata = Math.round(
-    nilai.reduce((sum, n) => {
-      const vals = [n.tugas, n.uts, n.uas].filter((v) => v !== null && v !== undefined);
-      const avg = vals.length ? vals.reduce((a,b) => a+b, 0) / vals.length : 0;
-      return sum + avg;
-    }, 0) / nilai.length
-  );
+  // Logic calculation based on API data instead of purely mock data
+  const completedTodos = todos.filter(t => t.completed).length;
+  const totalTodos = todos.length;
+  
+  // Calculate average from quiz attempts if available, otherwise fallback to local grades
+  let rataRata = 0;
+  if (quizAttempts.length > 0) {
+    const totalPercentage = quizAttempts.reduce((sum, q) => sum + (q.score / q.totalQuestions * 100), 0);
+    rataRata = Math.round(totalPercentage / quizAttempts.length);
+  } else {
+    rataRata = Math.round(
+      nilai.reduce((sum, n) => {
+        const vals = [n.tugas, n.uts, n.uas].filter((v) => v !== null && v !== undefined);
+        const avg = vals.length ? vals.reduce((a,b) => a+b, 0) / vals.length : 0;
+        return sum + avg;
+      }, 0) / nilai.length
+    );
+  }
+
+  // Calculate task completion percentage
+  const taskCompletionPct = totalTodos > 0 ? Math.round((completedTodos / totalTodos) * 100) : 0;
+  // Estimated hours (e.g., 2 hours per completed task)
+  const estimatedHours = completedTodos * 2;
+
+  if (loading) {
+    return (
+      <div className="flex h-64 w-full items-center justify-center">
+        <div className="w-8 h-8 border-4 border-violet-600/30 border-t-violet-600 rounded-full animate-spin"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-5xl space-y-5">
       <div className="grid grid-cols-3 gap-4">
         {[
-          { label:"Total Jam Belajar", value:"56 jam", sub:"Minggu ini",          icon:Clock,  color:"text-violet-600 bg-violet-100" },
-          { label:"Nilai Rata-rata",   value:String(rataRata),   sub:"Semester ini", icon:Star,   color:"text-amber-600 bg-amber-100" },
-          { label:"Target Mingguan",   value:"60%",    sub:"Dari 30 jam target",   icon:Target, color:"text-emerald-600 bg-emerald-100" },
+          { label:"Tugas Selesai", value:`${completedTodos} / ${totalTodos}`, sub:`~${estimatedHours} jam dedikasi`,          icon:Clock,  color:"text-violet-600 bg-violet-100" },
+          { label:"Nilai Rata-rata",   value:String(rataRata),   sub:"Berdasarkan Kuis/Tugas", icon:Star,   color:"text-amber-600 bg-amber-100" },
+          { label:"Target Penyelesaian",   value:`${taskCompletionPct}%`,    sub:"Dari total tugasmu",   icon:Target, color:"text-emerald-600 bg-emerald-100" },
         ].map(({ label, value, sub, icon:IconC, color }) => (
           <div key={label} className="bg-card rounded-xl border border-border p-5">
             <div className={`w-9 h-9 rounded-lg ${color} flex items-center justify-center mb-3`}><IconC size={18} /></div>

@@ -1,17 +1,40 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { HelpCircle, CheckCircle2, XCircle } from 'lucide-react';
-import { QUIZ } from '../data/quiz';
+import api from '../lib/api';
 
 export default function KuisPage() {
+  const [questions, setQuestions] = useState([]);
+  const [loading, setLoading]     = useState(true);
+
   const [started,  setStarted]  = useState(false);
   const [qIdx,     setQIdx]     = useState(0);
   const [selected, setSelected] = useState(null);
   const [answered, setAnswered] = useState(false);
   const [score,    setScore]    = useState(0);
   const [finished, setFinished] = useState(false);
-  const [log,      setLog]      = useState(new Array(QUIZ.length).fill(null));
+  const [log,      setLog]      = useState([]);
 
-  const q = QUIZ[qIdx];
+  useEffect(() => {
+    fetchQuestions();
+  }, []);
+
+  const fetchQuestions = async () => {
+    try {
+      const res = await api.get('/quiz/questions');
+      const mapped = res.data.map(q => ({
+        ...q,
+        correct: q.correctIndex
+      }));
+      setQuestions(mapped);
+      setLog(new Array(mapped.length).fill(null));
+    } catch (error) {
+      console.error("Failed to fetch questions", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const q = questions[qIdx];
 
   const answer = (idx) => {
     if (answered) return;
@@ -21,16 +44,37 @@ export default function KuisPage() {
     if (idx === q.correct) setScore((s) => s+1);
   };
 
-  const next = () => {
-    if (qIdx+1 < QUIZ.length) { setQIdx((i) => i+1); setSelected(null); setAnswered(false); }
-    else setFinished(true);
+  const next = async () => {
+    if (qIdx + 1 < questions.length) {
+      setQIdx((i) => i+1);
+      setSelected(null);
+      setAnswered(false);
+    } else {
+      setFinished(true);
+      try {
+        await api.post('/quiz/submit', {
+          score: score + (selected === q.correct ? 1 : 0),
+          totalQuestions: questions.length
+        });
+      } catch (error) {
+        console.error("Failed to submit quiz score", error);
+      }
+    }
   };
 
   const restart = () => {
     setStarted(false); setQIdx(0); setSelected(null);
     setAnswered(false); setScore(0); setFinished(false);
-    setLog(new Array(QUIZ.length).fill(null));
+    setLog(new Array(questions.length).fill(null));
   };
+
+  if (loading) {
+    return (
+      <div className="flex h-64 w-full items-center justify-center">
+        <div className="w-8 h-8 border-4 border-violet-600/30 border-t-violet-600 rounded-full animate-spin"></div>
+      </div>
+    );
+  }
 
   if (!started) {
     return (
@@ -40,7 +84,7 @@ export default function KuisPage() {
           <h2 className="text-2xl font-extrabold text-foreground">Kuis Campuran</h2>
           <p className="text-muted-foreground text-sm mt-1.5">Uji pemahamanmu dari semua mata kuliah semester 3</p>
           <div className="grid grid-cols-3 gap-3 my-6">
-            {[{ label:"Soal", value:`${QUIZ.length}` },{ label:"Matkul", value:"5" },{ label:"Waktu", value:"Bebas" }].map(({ label, value }) => (
+            {[{ label:"Soal", value:`${questions.length}` },{ label:"Matkul", value:"5" },{ label:"Waktu", value:"Bebas" }].map(({ label, value }) => (
               <div key={label} className="bg-muted/60 rounded-xl py-3"><p className="text-xl font-extrabold text-foreground">{value}</p><p className="text-xs text-muted-foreground mt-0.5">{label}</p></div>
             ))}
           </div>
@@ -51,7 +95,8 @@ export default function KuisPage() {
   }
 
   if (finished) {
-    const pct = Math.round((score/QUIZ.length)*100);
+    const finalScore = score;
+    const pct = Math.round((finalScore/questions.length)*100);
     const grade = pct>=80 ? { label:"Sangat Baik!",         emoji:"🏆", color:"text-emerald-600" }
                 : pct>=60 ? { label:"Baik!",                emoji:"👍", color:"text-blue-600" }
                 :           { label:"Perlu Belajar Lagi",   emoji:"📚", color:"text-amber-600" };
@@ -63,11 +108,11 @@ export default function KuisPage() {
           <h2 className="text-2xl font-extrabold text-foreground">Kuis Selesai!</h2>
           <p className={`text-base font-bold mt-1 ${grade.color}`}>{grade.label}</p>
           <div className="my-5">
-            <p className="text-5xl font-extrabold text-foreground">{score}/{QUIZ.length}</p>
+            <p className="text-5xl font-extrabold text-foreground">{finalScore}/{questions.length}</p>
             <p className="text-muted-foreground text-sm mt-1">{pct}% jawaban benar</p>
           </div>
           <div className="space-y-2 text-left mb-6">
-            {QUIZ.map((qItem, i) => {
+            {questions.map((qItem, i) => {
               const correct = log[i] === qItem.correct;
               return (
                 <div key={i} className={`flex items-start gap-2.5 p-3 rounded-lg text-xs ${correct ? "bg-emerald-50" : "bg-red-50"}`}>
@@ -86,11 +131,11 @@ export default function KuisPage() {
   return (
     <div className="max-w-xl mx-auto space-y-4">
       <div className="flex items-center justify-between text-xs">
-        <span className="text-muted-foreground font-medium">Soal {qIdx+1} dari {QUIZ.length}</span>
+        <span className="text-muted-foreground font-medium">Soal {qIdx+1} dari {questions.length}</span>
         <span className="text-violet-600 font-bold">{q.subject}</span>
       </div>
       <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
-        <div className="h-full bg-violet-500 rounded-full transition-all duration-500" style={{ width:`${(qIdx/QUIZ.length)*100}%` }} />
+        <div className="h-full bg-violet-500 rounded-full transition-all duration-500" style={{ width:`${(qIdx/questions.length)*100}%` }} />
       </div>
 
       <div className="bg-card rounded-2xl border border-border p-6">
@@ -134,7 +179,7 @@ export default function KuisPage() {
 
       {answered && (
         <button onClick={next} className="w-full py-3 bg-violet-600 hover:bg-violet-700 text-white font-bold rounded-xl transition-colors text-sm">
-          {qIdx+1 < QUIZ.length ? "Soal Berikutnya →" : "Lihat Hasil"}
+          {qIdx+1 < questions.length ? "Soal Berikutnya →" : "Lihat Hasil"}
         </button>
       )}
     </div>

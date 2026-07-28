@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus } from 'lucide-react';
+import api from '../lib/api';
 
 const SUBJECTS = ["Kalkulus II", "Fisika Dasar", "Pemrograman Web", "Basis Data", "Bahasa Indonesia"];
 
@@ -12,68 +13,125 @@ const JADWAL_COLORS = {
 };
 const jadwalColorFor = (subject) => JADWAL_COLORS[subject] || { dot:"bg-slate-500", cell:"bg-slate-100 border-l-slate-500 text-slate-900" };
 
-const INITIAL_SCHEDULE = {
-  Senin:  [
-    { subject:"Kalkulus II",     room:"G-201" },
-    null,
-    { subject:"Pemrograman Web", room:"Lab A" },
-    { subject:"Basis Data",      room:"Lab B" },
-  ],
-  Selasa: [null, { subject:"Fisika Dasar", room:"G-105" }, null, null],
-  Rabu:   [
-    { subject:"Bahasa Indonesia", room:"G-301" },
-    null,
-    { subject:"Kalkulus II",      room:"G-201" },
-    null,
-  ],
-  Kamis:  [null, { subject:"Pemrograman Web", room:"Lab A" }, null, { subject:"Fisika Dasar", room:"G-105" }],
-  Jumat:  [null, { subject:"Basis Data", room:"Lab B" }, null, null],
+const EMPTY_SCHEDULE = {
+  Senin:  [null, null, null, null],
+  Selasa: [null, null, null, null],
+  Rabu:   [null, null, null, null],
+  Kamis:  [null, null, null, null],
+  Jumat:  [null, null, null, null],
 };
+
+const TIME_SLOTS_MAP = [
+  { start: "08:00", end: "10:00", label: "08:00–10:00" },
+  { start: "10:00", end: "12:00", label: "10:00–12:00" },
+  { start: "13:00", end: "15:00", label: "13:00–15:00" },
+  { start: "15:00", end: "17:00", label: "15:00–17:00" },
+];
 
 export default function JadwalPage({ onScheduleChange }) {
   const days      = ["Senin","Selasa","Rabu","Kamis","Jumat"];
-  const timeSlots = ["08:00–10:00","10:00–12:00","13:00–15:00","15:00–17:00"];
+  const timeSlots = TIME_SLOTS_MAP.map(t => t.label);
 
-  const [schedule, setSchedule] = useState(INITIAL_SCHEDULE);
+  const [schedule, setSchedule] = useState(EMPTY_SCHEDULE);
   const [customSubjects, setCustomSubjects] = useState([]); // matkul tambahan yang diketik manual oleh user
-  const [modal, setModal]       = useState(null); // { day, rowIdx, subject, newSubjectName, room, isEdit }
+  const [modal, setModal]       = useState(null); // { day, rowIdx, subject, newSubjectName, room, isEdit, id }
+  const [loading, setLoading]   = useState(true);
+
+  useEffect(() => {
+    fetchSchedules();
+  }, []);
+
+  const fetchSchedules = async () => {
+    try {
+      const res = await api.get('/schedules');
+      const newSchedule = {
+        Senin: [null, null, null, null],
+        Selasa: [null, null, null, null],
+        Rabu: [null, null, null, null],
+        Kamis: [null, null, null, null],
+        Jumat: [null, null, null, null],
+      };
+      
+      const customSubs = new Set();
+      
+      res.data.forEach((sch) => {
+        const rowIdx = TIME_SLOTS_MAP.findIndex(t => t.start === sch.startTime);
+        if (rowIdx !== -1 && newSchedule[sch.day]) {
+          newSchedule[sch.day][rowIdx] = { id: sch.id, subject: sch.subject, room: sch.room };
+          if (!SUBJECTS.includes(sch.subject)) {
+            customSubs.add(sch.subject);
+          }
+        }
+      });
+      
+      setSchedule(newSchedule);
+      setCustomSubjects(Array.from(customSubs));
+    } catch (error) {
+      console.error("Failed to fetch schedules", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const subjectOptions = [...SUBJECTS, ...customSubjects];
 
   const openCell = (day, rowIdx) => {
     const cls = schedule[day][rowIdx];
-    setModal({ day, rowIdx, subject: cls?.subject || subjectOptions[0], newSubjectName: "", room: cls?.room || "", isEdit: !!cls });
+    setModal({ day, rowIdx, id: cls?.id, subject: cls?.subject || subjectOptions[0], newSubjectName: "", room: cls?.room || "", isEdit: !!cls });
   };
 
-  const saveCell = () => {
+  const saveCell = async () => {
     const isNew = modal.subject === "__new__";
     const finalSubject = isNew ? modal.newSubjectName.trim() : modal.subject;
     if (!finalSubject) return;
 
-    if (isNew && !subjectOptions.includes(finalSubject)) {
-      setCustomSubjects((prev) => [...prev, finalSubject]);
-    }
+    try {
+      const timeSlot = TIME_SLOTS_MAP[modal.rowIdx];
+      const payload = {
+        subject: finalSubject,
+        day: modal.day,
+        startTime: timeSlot.start,
+        endTime: timeSlot.end,
+        room: modal.room || "—"
+      };
 
-    setSchedule((prev) => {
-      const next = { ...prev, [modal.day]: [...prev[modal.day]] };
-      next[modal.day][modal.rowIdx] = { subject: finalSubject, room: modal.room || "—" };
-      return next;
-    });
-    onScheduleChange && onScheduleChange(finalSubject);
-    setModal(null);
+      if (modal.isEdit) {
+        await api.put(`/schedules/${modal.id}`, payload);
+      } else {
+        await api.post('/schedules', payload);
+      }
+
+      await fetchSchedules();
+
+      onScheduleChange && onScheduleChange(finalSubject);
+      setModal(null);
+    } catch (error) {
+      console.error("Failed to save schedule", error);
+    }
   };
 
-  const deleteCell = () => {
-    setSchedule((prev) => {
-      const next = { ...prev, [modal.day]: [...prev[modal.day]] };
-      next[modal.day][modal.rowIdx] = null;
-      return next;
-    });
-    onScheduleChange && onScheduleChange(modal.subject);
-    setModal(null);
+  const deleteCell = async () => {
+    if (!modal.id) return;
+    try {
+      await api.delete(`/schedules/${modal.id}`);
+      await fetchSchedules();
+      
+      onScheduleChange && onScheduleChange(modal.subject);
+      setModal(null);
+    } catch (error) {
+      console.error("Failed to delete schedule", error);
+    }
   };
 
   const usedSubjects = [...new Set(Object.values(schedule).flat().filter(Boolean).map((c) => c.subject))];
+
+  if (loading) {
+    return (
+      <div className="flex h-64 w-full items-center justify-center">
+        <div className="w-8 h-8 border-4 border-violet-600/30 border-t-violet-600 rounded-full animate-spin"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-5xl space-y-4">

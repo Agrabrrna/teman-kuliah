@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { GraduationCap, User, Lock, EyeOff, Eye, XCircle } from 'lucide-react';
+import api from '../lib/api';
 
-export default function RegisterPage({ accounts, onRegister, onLogin }) {
+export default function RegisterPage({ onLogin }) {
   const navigate = useNavigate();
   const [name, setName]         = useState("");
   const [username, setUsername] = useState("");
@@ -14,7 +15,7 @@ export default function RegisterPage({ accounts, onRegister, onLogin }) {
   const [error, setError]       = useState("");
   const [loading, setLoading]   = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
 
@@ -31,23 +32,33 @@ export default function RegisterPage({ accounts, onRegister, onLogin }) {
       setError("Konfirmasi password tidak cocok.");
       return;
     }
-    if (accounts.some((a) => a.username === uname)) {
-      setError("Username sudah dipakai. Coba username lain.");
-      return;
-    }
 
     setLoading(true);
-    setTimeout(() => {
-      const account = onRegister({
+    try {
+      const response = await api.post('/auth/register', {
         name: name.trim(),
         username: uname,
         prodi: prodi.trim(),
         semester: Number(semester),
         password,
       });
-      onLogin(account);
+
+      // Setelah register berhasil, langsung login otomatis
+      const loginResp = await api.post('/auth/login', { username: uname, password });
+      const { token, user } = loginResp.data;
+      
+      localStorage.setItem('token', token);
+      onLogin(user);
       navigate('/');
-    }, 500);
+    } catch (err) {
+      if (err.response && err.response.data && err.response.data.error) {
+        setError(err.response.data.error);
+      } else {
+        setError("Gagal terhubung ke server.");
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

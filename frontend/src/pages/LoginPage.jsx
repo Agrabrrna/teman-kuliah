@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { GraduationCap, User, Lock, EyeOff, Eye, XCircle } from 'lucide-react';
+import api from '../lib/api';
 
-export default function LoginPage({ accounts, onLogin }) {
+export default function LoginPage({ onLogin }) {
   const navigate = useNavigate();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -10,25 +11,25 @@ export default function LoginPage({ accounts, onLogin }) {
   const [error, setError]       = useState("");
   const [loading, setLoading]   = useState(false);
 
-  const attemptLogin = (u, p) => {
+  const attemptLogin = async (u, p) => {
     setError("");
     setLoading(true);
-    setTimeout(() => {
-      const found = accounts.find(
-        (a) => a.username === u.trim() && a.password === p
-      );
-      if (found) {
-        onLogin(found);
-        navigate('/');
+    try {
+      const response = await api.post('/auth/login', { username: u.trim(), password: p });
+      const { token, user } = response.data;
+      
+      localStorage.setItem('token', token);
+      onLogin(user);
+      navigate('/');
+    } catch (err) {
+      if (err.response && err.response.data && err.response.data.error) {
+        setError(err.response.data.error);
       } else {
-        setError(
-          accounts.length === 0
-            ? "Belum ada akun terdaftar. Silakan daftar dulu."
-            : "Username atau password salah. Coba lagi."
-        );
-        setLoading(false);
+        setError("Gagal terhubung ke server.");
       }
-    }, 500);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSubmit = (e) => {

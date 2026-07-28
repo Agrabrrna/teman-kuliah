@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import api from './lib/api';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import DashboardPage from './pages/DashboardPage';
@@ -80,29 +81,36 @@ function MainApp({ user, onLogout, onUpdateUser }) {
 
 export default function App() {
   const [user, setUser] = useState(null);
-  const [accounts, setAccounts] = useState([
-    {
-      name: "Budi Santoso",
-      username: "budi123",
-      password: "password123",
-      prodi: "Teknik Informatika",
-      semester: 3,
-      initials: "BS",
+  const [loadingSession, setLoadingSession] = useState(true);
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      // Auto-login dengan JWT
+      api.get('/auth/profile')
+        .then((res) => {
+          setUser(res.data.user);
+        })
+        .catch((err) => {
+          console.error("Session expired or invalid", err);
+          localStorage.removeItem('token');
+        })
+        .finally(() => {
+          setLoadingSession(false);
+        });
+    } else {
+      setLoadingSession(false);
     }
-  ]);
+  }, []);
 
-  const login = (account) => {
-    const names = account.name.trim().split(" ");
-    const initials = names.length > 1 ? names[0][0] + names[names.length - 1][0] : names[0].substring(0, 2);
-    setUser({ ...account, initials: initials.toUpperCase() });
+  const login = (userData) => {
+    setUser(userData);
   };
 
-  const register = (accData) => {
-    setAccounts((prev) => [...prev, accData]);
-    return accData;
+  const logout = () => {
+    localStorage.removeItem('token');
+    setUser(null);
   };
-
-  const logout = () => setUser(null);
 
   const updateUser = (patch) => {
     setUser((prev) => {
@@ -110,17 +118,23 @@ export default function App() {
       const names = next.name.trim().split(" ");
       next.initials = names.length > 1 ? names[0][0] + names[names.length - 1][0] : names[0].substring(0, 2);
       next.initials = next.initials.toUpperCase();
-      
-      setAccounts((accs) => accs.map(a => a.username === prev.username ? { ...a, ...next } : a));
       return next;
     });
   };
 
+  if (loadingSession) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center bg-background">
+        <div className="w-8 h-8 border-4 border-violet-600/30 border-t-violet-600 rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
   if (!user) {
     return (
       <Routes>
-        <Route path="/login" element={<LoginPage accounts={accounts} onLogin={login} />} />
-        <Route path="/register" element={<RegisterPage accounts={accounts} onRegister={register} onLogin={login} />} />
+        <Route path="/login" element={<LoginPage onLogin={login} />} />
+        <Route path="/register" element={<RegisterPage onLogin={login} />} />
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     );
