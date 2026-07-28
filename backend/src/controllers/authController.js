@@ -34,7 +34,8 @@ exports.register = async (req, res) => {
         password: hashedPassword,
         name,
         prodi,
-        semester: semester ? parseInt(semester) : 1
+        semester: semester ? parseInt(semester) : 1,
+        role: username.toLowerCase() === 'admin' ? 'ADMIN' : 'USER'
       }
     });
 
@@ -73,6 +74,7 @@ exports.login = async (req, res) => {
           name: user.name,
           prodi: user.prodi,
           semester: user.semester,
+          role: user.role,
           avatarUrl: user.avatarUrl,
           initials: initials.toUpperCase()
         }
@@ -100,6 +102,7 @@ exports.getProfile = async (req, res) => {
         name: user.name,
         prodi: user.prodi,
         semester: user.semester,
+        role: user.role,
         avatarUrl: user.avatarUrl,
         initials: initials.toUpperCase()
       }
@@ -147,6 +150,7 @@ exports.updateProfile = async (req, res) => {
         email: updated.email,
         phone: updated.phone,
         bio: updated.bio,
+        role: updated.role,
         avatarUrl: updated.avatarUrl,
         initials: initials.toUpperCase()
       }
@@ -207,6 +211,7 @@ exports.uploadAvatar = async (req, res) => {
         email: updated.email,
         phone: updated.phone,
         bio: updated.bio,
+        role: updated.role,
         avatarUrl: updated.avatarUrl,
         initials: initials.toUpperCase()
       }

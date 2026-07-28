@@ -20,6 +20,7 @@ model User {
   bio         String?
   avatarColor String?
   avatarUrl   String?
+  role        String   @default("USER")
   createdAt   DateTime @default(now())
 
   todos        Todo[]

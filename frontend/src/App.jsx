@@ -14,6 +14,11 @@ import ProfilPage from './pages/ProfilPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 
+// Admin imports
+import AdminLayout from './components/AdminLayout';
+import AdminDashboardPage from './pages/AdminDashboardPage';
+import AdminUsersPage from './pages/AdminUsersPage';
+
 function MainApp({ user, onLogout, onUpdateUser }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [notifs, setNotifs] = useState([]);
@@ -58,16 +63,31 @@ function MainApp({ user, onLogout, onUpdateUser }) {
         />
         <main className="flex-1 p-4 lg:p-6 overflow-y-auto">
           <Routes>
-            <Route path="/" element={<DashboardPage user={user} />} />
-            <Route path="/upload" element={<UploadPage />} />
-            <Route path="/catatan" element={<CatatanPage />} />
-            <Route path="/jadwal" element={<JadwalPage />} />
-            <Route path="/todo" element={<TodoPage />} />
-            <Route path="/progress" element={<ProgressPage />} />
-            <Route path="/kuis" element={<KuisPage user={user} />} />
-            <Route path="/profil" element={<ProfilPage user={user} onUpdateUser={onUpdateUser} />} />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
+          {/* Admin Routes */}
+          {user?.role === 'ADMIN' && (
+            <Route path="/admin" element={<AdminLayout user={user} onLogout={onLogout} />}>
+              <Route index element={<AdminDashboardPage />} />
+              <Route path="users" element={<AdminUsersPage />} />
+              <Route path="*" element={<Navigate to="/admin" replace />} />
+            </Route>
+          )}
+
+          {/* User Routes */}
+          {user?.role !== 'ADMIN' && (
+            <>
+              <Route path="/" element={<DashboardPage user={user} />} />
+              <Route path="/upload" element={<UploadPage />} />
+              <Route path="/catatan" element={<CatatanPage />} />
+              <Route path="/jadwal" element={<JadwalPage />} />
+              <Route path="/todo" element={<TodoPage />} />
+              <Route path="/progress" element={<ProgressPage />} />
+              <Route path="/kuis" element={<KuisPage user={user} />} />
+              <Route path="/profil" element={<ProfilPage user={user} onUpdateUser={onUpdateUser} />} />
+            </>
+          )}
+          
+          <Route path="*" element={<Navigate to={user?.role === 'ADMIN' ? "/admin" : "/"} replace />} />
+        </Routes>
         </main>
       </div>
     </div>

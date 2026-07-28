@@ -19,6 +19,7 @@ const noteRoutes = require('./routes/noteRoutes');
 const scheduleRoutes = require('./routes/scheduleRoutes');
 const materialRoutes = require('./routes/materialRoutes');
 const quizRoutes = require('./routes/quizRoutes');
+const adminRoutes = require('./routes/adminRoutes');
 
 // Use Routes
 app.use('/api/auth', authRoutes);
@@ -27,6 +28,7 @@ app.use('/api/notes', noteRoutes);
 app.use('/api/schedules', scheduleRoutes);
 app.use('/api/materials', materialRoutes);
 app.use('/api/quizzes', quizRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
