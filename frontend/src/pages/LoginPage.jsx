@@ -9,8 +9,8 @@ export default function LoginPage({ onLogin }) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPass, setShowPass] = useState(false);
-  const [error, setError]       = useState("");
-  const [loading, setLoading]   = useState(false);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const attemptLogin = async (u, p) => {
     setError("");
@@ -18,7 +18,7 @@ export default function LoginPage({ onLogin }) {
     try {
       const response = await api.post('/auth/login', { username: u.trim(), password: p });
       const { token, user } = response.data;
-      
+
       localStorage.setItem('token', token);
       onLogin(user);
       navigate('/');
@@ -110,7 +110,7 @@ export default function LoginPage({ onLogin }) {
                   type="text"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  placeholder="Masukkan username"
+                  placeholder="Masukkan Username"
                   required
                   className="w-full pl-10 pr-4 py-3 bg-card border border-border rounded-xl text-sm outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition-all text-foreground placeholder-muted-foreground"
                 />

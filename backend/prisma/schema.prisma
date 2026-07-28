@@ -21,6 +21,7 @@ model User {
   avatarColor String?
   avatarUrl   String?
   role        String   @default("USER")
+  isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
 
   todos        Todo[]

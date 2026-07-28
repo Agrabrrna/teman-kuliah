@@ -6,6 +6,8 @@ export default function AdminUsersPage() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [updatingRole, setUpdatingRole] = useState(null);
+  const [updatingStatus, setUpdatingStatus] = useState(null);
 
   useEffect(() => {
     fetchUsers();
@@ -19,6 +21,32 @@ export default function AdminUsersPage() {
       console.error("Gagal memuat pengguna", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleRoleChange = async (userId, newRole) => {
+    try {
+      setUpdatingRole(userId);
+      await api.put(`/admin/users/${userId}/role`, { role: newRole });
+      setUsers(prev => prev.map(u => u.id === userId ? { ...u, role: newRole } : u));
+    } catch (error) {
+      console.error("Gagal memperbarui role", error);
+      alert(error.response?.data?.error || "Gagal memperbarui role");
+    } finally {
+      setUpdatingRole(null);
+    }
+  };
+
+  const handleStatusToggle = async (userId, currentStatus) => {
+    try {
+      setUpdatingStatus(userId);
+      await api.put(`/admin/users/${userId}/status`, { isActive: !currentStatus });
+      setUsers(prev => prev.map(u => u.id === userId ? { ...u, isActive: !currentStatus } : u));
+    } catch (error) {
+      console.error("Gagal memperbarui status", error);
+      alert(error.response?.data?.error || "Gagal memperbarui status");
+    } finally {
+      setUpdatingStatus(null);
     }
   };
 
@@ -51,6 +79,8 @@ export default function AdminUsersPage() {
               <tr>
                 <th className="px-4 py-3 font-medium">Nama & Username</th>
                 <th className="px-4 py-3 font-medium">Program Studi</th>
+                <th className="px-4 py-3 font-medium text-center">Role</th>
+                <th className="px-4 py-3 font-medium text-center">Status</th>
                 <th className="px-4 py-3 font-medium text-center">Tugas</th>
                 <th className="px-4 py-3 font-medium text-center">Jadwal</th>
                 <th className="px-4 py-3 font-medium text-center">Kuis</th>
@@ -74,9 +104,33 @@ export default function AdminUsersPage() {
                       <p className="text-xs text-muted-foreground">@{user.username}</p>
                     </td>
                     <td className="px-4 py-3 text-muted-foreground">{user.prodi || '-'} (Smt {user.semester})</td>
-                    <td className="px-4 py-3 text-center font-medium text-foreground">{user._count.todos}</td>
-                    <td className="px-4 py-3 text-center font-medium text-foreground">{user._count.schedules}</td>
-                    <td className="px-4 py-3 text-center font-medium text-foreground">{user._count.quizAttempts}</td>
+                    <td className="px-4 py-3 text-center">
+                      <select 
+                        value={user.role} 
+                        onChange={(e) => handleRoleChange(user.id, e.target.value)}
+                        disabled={updatingRole === user.id}
+                        className={`text-xs px-2 py-1 rounded-md outline-none bg-card border ${user.role === 'ADMIN' ? 'border-violet-500/50 text-violet-500 font-bold' : 'border-border text-foreground'}`}
+                      >
+                        <option value="USER">USER</option>
+                        <option value="ADMIN">ADMIN</option>
+                      </select>
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <button
+                        onClick={() => handleStatusToggle(user.id, user.isActive)}
+                        disabled={updatingStatus === user.id}
+                        className={`text-xs px-2 py-1 rounded-md transition-colors font-medium ${
+                          user.isActive 
+                            ? 'bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20' 
+                            : 'bg-red-500/10 text-red-500 hover:bg-red-500/20'
+                        }`}
+                      >
+                        {user.isActive ? 'Aktif' : 'Nonaktif'}
+                      </button>
+                    </td>
+                    <td className="px-4 py-3 text-center font-medium text-foreground">{user._count?.todos || 0}</td>
+                    <td className="px-4 py-3 text-center font-medium text-foreground">{user._count?.schedules || 0}</td>
+                    <td className="px-4 py-3 text-center font-medium text-foreground">{user._count?.quizAttempts || 0}</td>
                     <td className="px-4 py-3 text-right text-muted-foreground">
                       {new Date(user.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
                     </td>

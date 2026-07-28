@@ -55,6 +55,10 @@ exports.login = async (req, res) => {
       return res.status(400).json({ error: 'Username atau password salah' });
     }
 
+    if (!user.isActive) {
+      return res.status(403).json({ error: 'Akun Anda telah dinonaktifkan. Silakan hubungi Administrator.' });
+    }
+
     const isValid = await bcrypt.compare(password, user.password);
     if (!isValid) {
       return res.status(400).json({ error: 'Username atau password salah' });

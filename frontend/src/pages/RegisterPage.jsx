@@ -121,7 +121,7 @@ export default function RegisterPage({ onLogin }) {
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="Masukkan Username"
+                  placeholder="Masukkan Nama"
                   required
                   className="w-full pl-10 pr-4 py-3 bg-card border border-border rounded-xl text-sm outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition-all text-foreground placeholder-muted-foreground"
                 />
@@ -136,7 +136,7 @@ export default function RegisterPage({ onLogin }) {
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                placeholder="Masukkan username"
+                placeholder="Masukkan Username"
                 required
                 className="w-full px-4 py-3 bg-card border border-border rounded-xl text-sm outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition-all text-foreground placeholder-muted-foreground"
               />

@@ -9,5 +9,7 @@ router.use(authMiddleware, adminMiddleware);
 
 router.get('/stats', adminController.getStats);
 router.get('/users', adminController.getUsers);
+router.put('/users/:id/role', adminController.updateRole);
+router.put('/users/:id/status', adminController.toggleUserStatus);
 
 module.exports = router;
