@@ -1,0 +1,7 @@
+export const QUIZ = [
+  { subject:"Kalkulus II",     question:"Turunan dari f(x) = sin(3x) adalah...",                                        options:["3cos(3x)","cos(3x)","−3cos(3x)","3sin(3x)"],                          correct:0, explanation:"Aturan rantai: d/dx[sin(u)] = cos(u)·u'. Karena u=3x → u'=3, hasilnya 3cos(3x)." },
+  { subject:"Fisika Dasar",    question:"Benda bermassa 5 kg dikenai gaya 20 N. Percepatannya adalah...",               options:["2 m/s²","4 m/s²","100 m/s²","0,25 m/s²"],                             correct:1, explanation:"F = m × a → a = F/m = 20 ÷ 5 = 4 m/s²" },
+  { subject:"Pemrograman Web", question:"HTTP method untuk memperbarui SEBAGIAN data resource adalah...",               options:["GET","POST","PATCH","DELETE"],                                         correct:2, explanation:"PATCH untuk partial update; PUT untuk full update/replace." },
+  { subject:"Basis Data",      question:"Kondisi di mana setiap foreign key merujuk ke primary key yang valid disebut...", options:["Normalisasi","Referential Integrity","Indexing","Dependency"],    correct:1, explanation:"Referential Integrity memastikan tidak ada orphan records — FK harus selalu valid." },
+  { subject:"Bahasa Indonesia", question:"Bentuk baku dari kata 'analisa' menurut KBBI adalah...",                      options:["analisa","analisis","analis","analisisa"],                             correct:1, explanation:"'Analisis' adalah bentuk baku. 'Analisa' merupakan bentuk tidak baku dari bahasa Belanda." },
+];
