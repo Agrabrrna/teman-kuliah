@@ -1,10 +1,17 @@
 const { PrismaClient } = require('@prisma/client');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const { createClient } = require('@supabase/supabase-js');
+const cloudinary = require('cloudinary').v2;
+const streamifier = require('streamifier');
 
 const prisma = new PrismaClient();
-const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
+
+// Configure Cloudinary
+cloudinary.config({ 
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME, 
+  api_key: process.env.CLOUDINARY_API_KEY, 
+  api_secret: process.env.CLOUDINARY_API_SECRET 
+});
 
 exports.register = async (req, res) => {
   try {
@@ -155,29 +162,35 @@ exports.uploadAvatar = async (req, res) => {
 
     if (!file) return res.status(400).json({ error: 'File tidak ditemukan' });
 
-    const fileName = `avatar_${req.user.id}_${Date.now()}_${file.originalname.replace(/\s+/g, '_')}`;
-    
-    // Upload to Supabase Storage
-    const { data: uploadData, error: uploadError } = await supabase.storage
-      .from('materials')
-      .upload(fileName, file.buffer, {
-        contentType: file.mimetype,
-        upsert: false
+    // Upload to Cloudinary using streamifier
+    const uploadToCloudinary = (buffer) => {
+      return new Promise((resolve, reject) => {
+        const stream = cloudinary.uploader.upload_stream(
+          { folder: 'avatars', public_id: `avatar_${req.user.id}_${Date.now()}` },
+          (error, result) => {
+            if (result) {
+              resolve(result);
+            } else {
+              reject(error);
+            }
+          }
+        );
+        streamifier.createReadStream(buffer).pipe(stream);
       });
+    };
 
-    if (uploadError) {
-      console.error(uploadError);
-      return res.status(500).json({ error: 'Gagal mengunggah foto ke storage' });
+    let uploadResult;
+    try {
+      uploadResult = await uploadToCloudinary(file.buffer);
+    } catch (uploadError) {
+      console.error('Cloudinary Upload Error:', uploadError);
+      return res.status(500).json({ error: 'Gagal mengunggah foto ke storage Cloudinary' });
     }
-
-    const { data: publicUrlData } = supabase.storage
-      .from('materials')
-      .getPublicUrl(fileName);
 
     const updated = await prisma.user.update({
       where: { id: req.user.id },
       data: {
-        avatarUrl: publicUrlData.publicUrl
+        avatarUrl: uploadResult.secure_url
       }
     });
 
