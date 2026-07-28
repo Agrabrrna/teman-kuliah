@@ -9,7 +9,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Middleware
-app.use(cors({ origin: 'http://localhost:5173' }));
+app.use(cors()); // Allow all origins for easier deployment
 app.use(express.json());
 
 // Import Routes
