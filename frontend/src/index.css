@@ -23,6 +23,24 @@
     --radius: 0.75rem;
   }
 
+  .dark {
+    --background: #0F0A19;
+    --foreground: #E0DEF2;
+    --card: #171129;
+    --card-foreground: #E0DEF2;
+    --primary: #8B5CF6;
+    --primary-foreground: #FFFFFF;
+    --secondary: #2E2252;
+    --secondary-foreground: #C4B5FD;
+    --muted: #22183D;
+    --muted-foreground: #9CA3AF;
+    --accent: #22D3EE;
+    --accent-foreground: #000000;
+    --destructive: #F87171;
+    --destructive-foreground: #FFFFFF;
+    --border: rgba(139, 92, 246, 0.2);
+  }
+
   html { 
     font-size: var(--font-size); 
   }

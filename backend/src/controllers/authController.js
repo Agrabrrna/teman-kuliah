@@ -1,8 +1,10 @@
 const { PrismaClient } = require('@prisma/client');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const { createClient } = require('@supabase/supabase-js');
 
 const prisma = new PrismaClient();
+const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
 
 exports.register = async (req, res) => {
   try {
@@ -56,17 +58,18 @@ exports.login = async (req, res) => {
 
     const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, { expiresIn: '7d' });
     
-    res.status(200).json({
-      token,
-      user: {
-        id: user.id,
-        username: user.username,
-        name: user.name,
-        prodi: user.prodi,
-        semester: user.semester,
-        initials: initials.toUpperCase()
-      }
-    });
+      res.status(200).json({
+        token,
+        user: {
+          id: user.id,
+          username: user.username,
+          name: user.name,
+          prodi: user.prodi,
+          semester: user.semester,
+          avatarUrl: user.avatarUrl,
+          initials: initials.toUpperCase()
+        }
+      });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Terjadi kesalahan pada server' });
@@ -90,6 +93,7 @@ exports.getProfile = async (req, res) => {
         name: user.name,
         prodi: user.prodi,
         semester: user.semester,
+        avatarUrl: user.avatarUrl,
         initials: initials.toUpperCase()
       }
     });
@@ -136,10 +140,66 @@ exports.updateProfile = async (req, res) => {
         email: updated.email,
         phone: updated.phone,
         bio: updated.bio,
+        avatarUrl: updated.avatarUrl,
         initials: initials.toUpperCase()
       }
     });
   } catch (error) {
     res.status(500).json({ error: 'Gagal memperbarui profil' });
+  }
+};
+
+exports.uploadAvatar = async (req, res) => {
+  try {
+    const file = req.file;
+
+    if (!file) return res.status(400).json({ error: 'File tidak ditemukan' });
+
+    const fileName = `avatar_${req.user.id}_${Date.now()}_${file.originalname.replace(/\s+/g, '_')}`;
+    
+    // Upload to Supabase Storage
+    const { data: uploadData, error: uploadError } = await supabase.storage
+      .from('materials')
+      .upload(fileName, file.buffer, {
+        contentType: file.mimetype,
+        upsert: false
+      });
+
+    if (uploadError) {
+      console.error(uploadError);
+      return res.status(500).json({ error: 'Gagal mengunggah foto ke storage' });
+    }
+
+    const { data: publicUrlData } = supabase.storage
+      .from('materials')
+      .getPublicUrl(fileName);
+
+    const updated = await prisma.user.update({
+      where: { id: req.user.id },
+      data: {
+        avatarUrl: publicUrlData.publicUrl
+      }
+    });
+
+    const names = updated.name.trim().split(" ");
+    const initials = names.length > 1 ? names[0][0] + names[names.length - 1][0] : names[0].substring(0, 2);
+
+    res.status(200).json({
+      user: {
+        id: updated.id,
+        username: updated.username,
+        name: updated.name,
+        prodi: updated.prodi,
+        semester: updated.semester,
+        email: updated.email,
+        phone: updated.phone,
+        bio: updated.bio,
+        avatarUrl: updated.avatarUrl,
+        initials: initials.toUpperCase()
+      }
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Gagal memperbarui foto profil' });
   }
 };

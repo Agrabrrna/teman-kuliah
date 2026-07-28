@@ -19,6 +19,7 @@ model User {
   phone       String?
   bio         String?
   avatarColor String?
+  avatarUrl   String?
   createdAt   DateTime @default(now())
 
   todos        Todo[]

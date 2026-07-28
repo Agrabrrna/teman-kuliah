@@ -16,12 +16,7 @@ import RegisterPage from './pages/RegisterPage';
 
 function MainApp({ user, onLogout, onUpdateUser }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [notifs, setNotifs] = useState([
-    { id:1, title:"Tugas baru ditambahkan", desc:"Tugas Kalkulus II dari Dosen A", time:"10 menit lalu", type:"todo", read:false },
-    { id:2, title:"Jadwal pengganti", desc:"Fisika Dasar dipindah ke jam 13:00", time:"1 jam lalu", type:"jadwal", read:false },
-    { id:3, title:"Materi baru diupload", desc:"Modul 5 - Pemrograman Web", time:"2 jam lalu", type:"upload", read:true },
-    { id:4, title:"Nilai Kuis Keluar", desc:"Kuis Basis Data: 85/100", time:"Kemarin", type:"nilai", read:true },
-  ]);
+  const [notifs, setNotifs] = useState([]);
 
   const location = useLocation();
 
@@ -69,7 +64,7 @@ function MainApp({ user, onLogout, onUpdateUser }) {
             <Route path="/jadwal" element={<JadwalPage />} />
             <Route path="/todo" element={<TodoPage />} />
             <Route path="/progress" element={<ProgressPage />} />
-            <Route path="/kuis" element={<KuisPage />} />
+            <Route path="/kuis" element={<KuisPage user={user} />} />
             <Route path="/profil" element={<ProfilPage user={user} onUpdateUser={onUpdateUser} />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

@@ -2,18 +2,19 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { GraduationCap, User, Lock, EyeOff, Eye, XCircle } from 'lucide-react';
 import api from '../lib/api';
+import ThemeToggle from '../components/ThemeToggle';
 
 export default function RegisterPage({ onLogin }) {
   const navigate = useNavigate();
-  const [name, setName]         = useState("");
+  const [name, setName] = useState("");
   const [username, setUsername] = useState("");
-  const [prodi, setProdi]       = useState("");
+  const [prodi, setProdi] = useState("");
   const [semester, setSemester] = useState("1");
   const [password, setPassword] = useState("");
-  const [confirm, setConfirm]   = useState("");
+  const [confirm, setConfirm] = useState("");
   const [showPass, setShowPass] = useState(false);
-  const [error, setError]       = useState("");
-  const [loading, setLoading]   = useState(false);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -46,7 +47,7 @@ export default function RegisterPage({ onLogin }) {
       // Setelah register berhasil, langsung login otomatis
       const loginResp = await api.post('/auth/login', { username: uname, password });
       const { token, user } = loginResp.data;
-      
+
       localStorage.setItem('token', token);
       onLogin(user);
       navigate('/');
@@ -94,8 +95,11 @@ export default function RegisterPage({ onLogin }) {
         <p className="relative text-violet-300/60 text-xs">© 2026 TemanKuliah · Semua hak dilindungi</p>
       </div>
 
-      <div className="flex-1 flex items-center justify-center p-8 bg-background overflow-y-auto">
-        <div className="w-full max-w-sm py-8">
+      <div className="flex-1 flex items-center justify-center p-8 bg-background overflow-y-auto relative">
+        <div className="absolute top-6 right-6">
+          <ThemeToggle />
+        </div>
+        <div className="w-full max-w-sm py-8 mt-6">
           <div className="lg:hidden flex items-center gap-2.5 mb-8">
             <div className="w-9 h-9 rounded-xl bg-violet-600 flex items-center justify-center">
               <GraduationCap size={20} className="text-white" />
@@ -117,7 +121,7 @@ export default function RegisterPage({ onLogin }) {
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="contoh: Andi Pratama"
+                  placeholder="Masukkan Username"
                   required
                   className="w-full pl-10 pr-4 py-3 bg-card border border-border rounded-xl text-sm outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition-all text-foreground placeholder-muted-foreground"
                 />
@@ -132,7 +136,7 @@ export default function RegisterPage({ onLogin }) {
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                placeholder="contoh: andi.pratama"
+                placeholder="Masukkan username"
                 required
                 className="w-full px-4 py-3 bg-card border border-border rounded-xl text-sm outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition-all text-foreground placeholder-muted-foreground"
               />

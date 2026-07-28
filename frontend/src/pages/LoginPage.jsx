@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { GraduationCap, User, Lock, EyeOff, Eye, XCircle } from 'lucide-react';
 import api from '../lib/api';
+import ThemeToggle from '../components/ThemeToggle';
 
 export default function LoginPage({ onLogin }) {
   const navigate = useNavigate();
@@ -83,8 +84,11 @@ export default function LoginPage({ onLogin }) {
         <p className="relative text-violet-300/60 text-xs">© 2026 TemanKuliah · Semua hak dilindungi</p>
       </div>
 
-      <div className="flex-1 flex items-center justify-center p-8 bg-background">
-        <div className="w-full max-w-sm">
+      <div className="flex-1 flex items-center justify-center p-8 bg-background relative">
+        <div className="absolute top-6 right-6">
+          <ThemeToggle />
+        </div>
+        <div className="w-full max-w-sm mt-6">
           <div className="lg:hidden flex items-center gap-2.5 mb-8">
             <div className="w-9 h-9 rounded-xl bg-violet-600 flex items-center justify-center">
               <GraduationCap size={20} className="text-white" />
@@ -106,7 +110,7 @@ export default function LoginPage({ onLogin }) {
                   type="text"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  placeholder="contoh: andi.pratama"
+                  placeholder="Masukkan username"
                   required
                   className="w-full pl-10 pr-4 py-3 bg-card border border-border rounded-xl text-sm outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition-all text-foreground placeholder-muted-foreground"
                 />

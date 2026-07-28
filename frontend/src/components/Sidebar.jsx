@@ -1,8 +1,8 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { 
   LayoutDashboard, Upload, BookOpen, Calendar, 
-  CheckSquare, TrendingUp, HelpCircle, User, GraduationCap, LogOut 
+  CheckSquare, TrendingUp, HelpCircle, User, GraduationCap, LogOut
 } from 'lucide-react';
 
 const navItems = [
@@ -52,16 +52,21 @@ export default function Sidebar({ user, onLogout }) {
         })}
       </nav>
 
-      <div className="p-4 border-t border-white/10">
-        <div className="flex items-center gap-3 mb-3">
-          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-violet-400 to-cyan-400 flex items-center justify-center flex-shrink-0">
-            <span className="text-white text-xs font-bold">{user.initials}</span>
+      <div className="p-4 border-t border-white/10 space-y-3">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden ${!user.avatarUrl ? 'bg-gradient-to-br from-violet-400 to-cyan-400' : ''}`}>
+            {user.avatarUrl ? (
+              <img src={user.avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+            ) : (
+              <span className="text-white text-xs font-bold">{user.initials}</span>
+            )}
           </div>
-          <div className="min-w-0 flex-1">
+          <div className="min-w-0">
             <p className="text-white text-sm font-semibold truncate">{user.name}</p>
             <p className="text-violet-300 text-xs truncate">{user.prodi}</p>
           </div>
         </div>
+        
         <button
           onClick={onLogout}
           className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-violet-300 hover:bg-red-500/20 hover:text-red-300 transition-all text-xs font-medium"

@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { CheckCircle2 } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { CheckCircle2, Camera } from 'lucide-react';
 import api from '../lib/api';
 
 export default function ProfilPage({ user, onUpdateUser }) {
@@ -17,6 +17,31 @@ export default function ProfilPage({ user, onUpdateUser }) {
   const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(false);
   const [pwLoading, setPwLoading] = useState(false);
+  const [avatarLoading, setAvatarLoading] = useState(false);
+  const fileInputRef = useRef(null);
+
+  const handleAvatarChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setAvatarLoading(true);
+    try {
+      const formData = new FormData();
+      formData.append('avatar', file);
+
+      const res = await api.post('/auth/avatar', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      
+      onUpdateUser && onUpdateUser(res.data.user);
+    } catch (error) {
+      console.error("Failed to upload avatar", error);
+      alert("Gagal mengunggah foto profil");
+    } finally {
+      setAvatarLoading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
 
   const set = (field) => (e) => setForm((f) => ({ ...f, [field]: e.target.value }));
 
@@ -74,8 +99,32 @@ export default function ProfilPage({ user, onUpdateUser }) {
   return (
     <div className="max-w-2xl space-y-5">
       <div className="bg-card rounded-xl border border-border p-5 flex items-center gap-4">
-        <div className="w-16 h-16 rounded-full bg-gradient-to-br from-violet-400 to-cyan-400 flex items-center justify-center flex-shrink-0">
-          <span className="text-white text-xl font-bold">{user.initials}</span>
+        <div 
+          className="relative w-16 h-16 rounded-full flex-shrink-0 cursor-pointer group overflow-hidden"
+          onClick={() => !avatarLoading && fileInputRef.current?.click()}
+        >
+          {user.avatarUrl ? (
+            <img src={user.avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+          ) : (
+            <div className="w-full h-full bg-gradient-to-br from-violet-400 to-cyan-400 flex items-center justify-center">
+              <span className="text-white text-xl font-bold">{user.initials}</span>
+            </div>
+          )}
+          
+          <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+            {avatarLoading ? (
+              <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+            ) : (
+              <Camera size={20} className="text-white" />
+            )}
+          </div>
+          <input 
+            type="file" 
+            ref={fileInputRef} 
+            onChange={handleAvatarChange} 
+            accept="image/*" 
+            className="hidden" 
+          />
         </div>
         <div className="min-w-0">
           <p className="font-bold text-foreground text-base truncate">{user.name}</p>

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { HelpCircle, CheckCircle2, XCircle } from 'lucide-react';
 import api from '../lib/api';
 
-export default function KuisPage() {
+export default function KuisPage({ user }) {
   const [questions, setQuestions] = useState([]);
   const [loading, setLoading]     = useState(true);
 
@@ -82,13 +82,23 @@ export default function KuisPage() {
         <div className="bg-card rounded-2xl border border-border p-8 text-center">
           <div className="w-16 h-16 bg-violet-100 rounded-2xl flex items-center justify-center mx-auto mb-5"><HelpCircle size={28} className="text-violet-600" /></div>
           <h2 className="text-2xl font-extrabold text-foreground">Kuis Campuran</h2>
-          <p className="text-muted-foreground text-sm mt-1.5">Uji pemahamanmu dari semua mata kuliah semester 3</p>
+          <p className="text-muted-foreground text-sm mt-1.5">Uji pemahamanmu dari semua mata kuliah semester {user?.semester || 1}</p>
           <div className="grid grid-cols-3 gap-3 my-6">
-            {[{ label:"Soal", value:`${questions.length}` },{ label:"Matkul", value:"5" },{ label:"Waktu", value:"Bebas" }].map(({ label, value }) => (
+            {[
+              { label:"Soal", value:`${questions.length}` },
+              { label:"Matkul", value: questions.length > 0 ? new Set(questions.map(q => q.subject)).size : "0" },
+              { label:"Waktu", value:"Bebas" }
+            ].map(({ label, value }) => (
               <div key={label} className="bg-muted/60 rounded-xl py-3"><p className="text-xl font-extrabold text-foreground">{value}</p><p className="text-xs text-muted-foreground mt-0.5">{label}</p></div>
             ))}
           </div>
-          <button onClick={() => setStarted(true)} className="w-full py-3 bg-violet-600 hover:bg-violet-700 text-white font-bold rounded-xl transition-colors text-sm">Mulai Kuis →</button>
+          <button 
+            onClick={() => setStarted(true)} 
+            disabled={questions.length === 0}
+            className="w-full py-3 bg-violet-600 hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold rounded-xl transition-colors text-sm"
+          >
+            {questions.length === 0 ? "Belum Ada Soal" : "Mulai Kuis →"}
+          </button>
         </div>
       </div>
     );

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Menu, Bell, Upload, Calendar, CheckSquare, Star } from 'lucide-react';
+import ThemeToggle from './ThemeToggle';
 
 export default function Header({ onMenuToggle, user, notifs, unreadCount, onMarkAllRead, onMarkOneRead, onClearNotifs }) {
   const [notifOpen, setNotifOpen] = useState(false);
@@ -30,6 +31,8 @@ export default function Header({ onMenuToggle, user, notifs, unreadCount, onMark
       </button>
       <h1 className="font-bold text-foreground text-base">{title}</h1>
       <div className="ml-auto flex items-center gap-2">
+        <ThemeToggle />
+        
         <div className="relative">
           <button
             onClick={() => setNotifOpen((v) => !v)}
@@ -65,9 +68,9 @@ export default function Header({ onMenuToggle, user, notifs, unreadCount, onMark
                       <button
                         key={n.id}
                         onClick={() => onMarkOneRead(n.id)}
-                        className={`w-full text-left flex items-start gap-3 px-4 py-3 border-b border-border last:border-b-0 hover:bg-muted/30 transition-colors ${!n.read ? "bg-violet-50/50" : ""}`}
+                        className={`w-full text-left flex items-start gap-3 px-4 py-3 border-b border-border last:border-b-0 hover:bg-muted/30 transition-colors ${!n.read ? "bg-violet-50/50 dark:bg-violet-900/20" : ""}`}
                       >
-                        <div className={`w-7 h-7 rounded-lg ${typeColor[n.type] || "text-violet-600 bg-violet-100"} flex items-center justify-center flex-shrink-0 mt-0.5`}>
+                        <div className={`w-7 h-7 rounded-lg ${typeColor[n.type] || "text-violet-600 bg-violet-100 dark:bg-violet-900/50"} flex items-center justify-center flex-shrink-0 mt-0.5`}>
                           <IconC size={13} />
                         </div>
                         <div className="min-w-0 flex-1">
@@ -92,10 +95,14 @@ export default function Header({ onMenuToggle, user, notifs, unreadCount, onMark
 
         <button
           onClick={() => navigate("/profil")}
-          className="w-8 h-8 rounded-full bg-gradient-to-br from-violet-400 to-cyan-400 flex items-center justify-center hover:ring-2 hover:ring-violet-300 transition-all"
+          className={`w-8 h-8 rounded-full flex items-center justify-center hover:ring-2 hover:ring-violet-300 transition-all ml-1 overflow-hidden ${!user.avatarUrl ? 'bg-gradient-to-br from-violet-400 to-cyan-400' : ''}`}
           title="Profil Saya"
         >
-          <span className="text-white text-xs font-bold">{user.initials}</span>
+          {user.avatarUrl ? (
+            <img src={user.avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+          ) : (
+            <span className="text-white text-xs font-bold">{user.initials}</span>
+          )}
         </button>
       </div>
     </header>

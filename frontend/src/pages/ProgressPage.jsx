@@ -8,38 +8,43 @@ export default function ProgressPage() {
   const [todos, setTodos] = useState([]);
   const [quizAttempts, setQuizAttempts] = useState([]);
 
-  // Mock data for charts and tables to maintain UI structure
-  const studyTargets = [
-    { subject:"Kalkulus II",     jam:14, target:20, color:"#7C3AED" },
-    { subject:"Fisika Dasar",    jam:8,  target:16, color:"#06B6D4" },
-    { subject:"Pemrograman Web", jam:18, target:20, color:"#10B981" },
-    { subject:"Basis Data",      jam:11, target:16, color:"#F59E0B" },
-    { subject:"Bahasa Indonesia",jam:5,  target:10, color:"#EF4444" },
-  ];
-
-  const weeklyData = [
-    { day:"Sen", jam:4 }, { day:"Sel", jam:2.5 }, { day:"Rab", jam:5 },
-    { day:"Kam", jam:3 }, { day:"Jum", jam:4.5 }, { day:"Sab", jam:6 }, { day:"Min", jam:1 },
-  ];
-
-  const [nilai, setNilai] = useState([
-    { mk:"Kalkulus II",     tugas:75, uts:82, uas:null },
-    { mk:"Fisika Dasar",    tugas:88, uts:79, uas:null },
-    { mk:"Pemrograman Web", tugas:92, uts:90, uas:null },
-    { mk:"Basis Data",      tugas:85, uts:88, uas:null },
-    { mk:"Bahasa Indonesia",tugas:78, uts:82, uas:null },
+  const [studyTargets, setStudyTargets] = useState([]);
+  const [weeklyData, setWeeklyData] = useState([
+    { day:"Sen", jam:0 }, { day:"Sel", jam:0 }, { day:"Rab", jam:0 },
+    { day:"Kam", jam:0 }, { day:"Jum", jam:0 }, { day:"Sab", jam:0 }, { day:"Min", jam:0 },
   ]);
+  const [nilai, setNilai] = useState([]);
   const [editingNilai, setEditingNilai] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [todosRes, quizRes] = await Promise.all([
+        const [todosRes, quizRes, schedulesRes] = await Promise.all([
           api.get('/todos'),
-          api.get('/quiz/attempts')
+          api.get('/quiz/attempts'),
+          api.get('/schedules')
         ]);
         setTodos(todosRes.data);
         setQuizAttempts(quizRes.data);
+        
+        const schedules = schedulesRes.data;
+        const uniqueSubjects = [...new Set(schedules.map(s => s.subject))];
+        const colors = ["#7C3AED", "#06B6D4", "#10B981", "#F59E0B", "#EF4444"];
+        
+        setStudyTargets(uniqueSubjects.map((subject, i) => ({
+          subject,
+          jam: 0,
+          target: 10,
+          color: colors[i % colors.length]
+        })));
+
+        setNilai(uniqueSubjects.map((mk) => ({
+          mk,
+          tugas: null,
+          uts: null,
+          uas: null
+        })));
+
       } catch (error) {
         console.error("Failed to fetch progress data", error);
       } finally {
@@ -112,17 +117,21 @@ export default function ProgressPage() {
         <div className="bg-card rounded-xl border border-border p-5">
           <h3 className="font-bold text-foreground text-sm mb-4">Progress per Mata Kuliah</h3>
           <div className="space-y-4">
-            {studyTargets.map(({ subject, jam, target, color }) => (
-              <div key={subject}>
-                <div className="flex items-center justify-between mb-1.5">
-                  <p className="text-xs font-semibold text-foreground">{subject}</p>
-                  <p className="text-xs text-muted-foreground" style={{ fontFamily:"'DM Mono', monospace" }}>{jam}/{target}j</p>
+            {studyTargets.length === 0 ? (
+              <p className="text-xs text-muted-foreground">Belum ada mata kuliah dari jadwalmu.</p>
+            ) : (
+              studyTargets.map(({ subject, jam, target, color }) => (
+                <div key={subject}>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <p className="text-xs font-semibold text-foreground">{subject}</p>
+                    <p className="text-xs text-muted-foreground" style={{ fontFamily:"'DM Mono', monospace" }}>{jam}/{target}j</p>
+                  </div>
+                  <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
+                    <div className="h-full rounded-full" style={{ width:`${(jam/target)*100}%`, background:color }} />
+                  </div>
                 </div>
-                <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
-                  <div className="h-full rounded-full" style={{ width:`${(jam/target)*100}%`, background:color }} />
-                </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
       </div>
@@ -149,33 +158,41 @@ export default function ProgressPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
-            {nilai.map(({ mk, tugas, uts, uas }) => {
-              const vals = [tugas, uts, uas].filter((v) => v !== null && v !== undefined);
-              const avg = vals.length ? Math.round(vals.reduce((a,b) => a+b, 0) / vals.length) : null;
-              const grade = avg===null ? "—" : avg>=85?"A":avg>=75?"B":avg>=65?"C":"D";
-              const gs = avg===null ? "text-muted-foreground bg-muted" : avg>=85?"text-emerald-700 bg-emerald-100":avg>=75?"text-blue-700 bg-blue-100":"text-amber-700 bg-amber-100";
-              const cellInput = (field, value) => editingNilai ? (
-                <input
-                  type="number" min="0" max="100"
-                  value={value ?? ""}
-                  onChange={(e) => updateNilai(mk, field, e.target.value)}
-                  placeholder="—"
-                  className="w-14 text-center bg-violet-50 border border-violet-200 rounded-md py-1 outline-none focus:border-violet-500 text-foreground"
-                  style={{ fontFamily:"'DM Mono', monospace" }}
-                />
-              ) : (
-                <span style={{ fontFamily:"'DM Mono', monospace" }}>{value ?? "—"}</span>
-              );
-              return (
-                <tr key={mk} className="hover:bg-muted/20 transition-colors">
-                  <td className="py-3 px-5 font-semibold text-foreground">{mk}</td>
-                  <td className="py-3 px-5 text-center text-foreground">{cellInput("tugas", tugas)}</td>
-                  <td className="py-3 px-5 text-center text-foreground">{cellInput("uts", uts)}</td>
-                  <td className="py-3 px-5 text-center text-foreground">{cellInput("uas", uas)}</td>
-                  <td className="py-3 px-5 text-center"><span className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-bold ${gs}`}>{grade}</span></td>
-                </tr>
-              );
-            })}
+            {nilai.length === 0 ? (
+              <tr>
+                <td colSpan={5} className="py-8 text-center text-xs text-muted-foreground">
+                  Belum ada mata kuliah dari jadwalmu.
+                </td>
+              </tr>
+            ) : (
+              nilai.map(({ mk, tugas, uts, uas }) => {
+                const vals = [tugas, uts, uas].filter((v) => v !== null && v !== undefined);
+                const avg = vals.length ? Math.round(vals.reduce((a,b) => a+b, 0) / vals.length) : null;
+                const grade = avg===null ? "—" : avg>=85?"A":avg>=75?"B":avg>=65?"C":"D";
+                const gs = avg===null ? "text-muted-foreground bg-muted" : avg>=85?"text-emerald-700 bg-emerald-100":avg>=75?"text-blue-700 bg-blue-100":"text-amber-700 bg-amber-100";
+                const cellInput = (field, value) => editingNilai ? (
+                  <input
+                    type="number" min="0" max="100"
+                    value={value ?? ""}
+                    onChange={(e) => updateNilai(mk, field, e.target.value)}
+                    placeholder="—"
+                    className="w-14 text-center bg-violet-50 border border-violet-200 rounded-md py-1 outline-none focus:border-violet-500 text-foreground"
+                    style={{ fontFamily:"'DM Mono', monospace" }}
+                  />
+                ) : (
+                  <span style={{ fontFamily:"'DM Mono', monospace" }}>{value ?? "—"}</span>
+                );
+                return (
+                  <tr key={mk} className="hover:bg-muted/20 transition-colors">
+                    <td className="py-3 px-5 font-semibold text-foreground">{mk}</td>
+                    <td className="py-3 px-5 text-center text-foreground">{cellInput("tugas", tugas)}</td>
+                    <td className="py-3 px-5 text-center text-foreground">{cellInput("uts", uts)}</td>
+                    <td className="py-3 px-5 text-center text-foreground">{cellInput("uas", uas)}</td>
+                    <td className="py-3 px-5 text-center"><span className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-bold ${gs}`}>{grade}</span></td>
+                  </tr>
+                );
+              })
+            )}
           </tbody>
         </table>
       </div>
