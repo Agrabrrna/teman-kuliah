@@ -127,7 +127,7 @@ export default function LoginPage({ onLogin }) {
                   type={showPass ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Masukkan password"
+                  placeholder="Masukkan Password"
                   required
                   className="w-full pl-10 pr-11 py-3 bg-card border border-border rounded-xl text-sm outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition-all text-foreground placeholder-muted-foreground"
                 />
