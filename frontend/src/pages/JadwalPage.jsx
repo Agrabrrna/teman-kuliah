@@ -30,11 +30,11 @@ const TIME_SLOTS_MAP = [
 
 export default function JadwalPage({ onScheduleChange }) {
   const days      = ["Senin","Selasa","Rabu","Kamis","Jumat"];
-  const timeSlots = TIME_SLOTS_MAP.map(t => t.label);
 
+  const [timeSlotsMap, setTimeSlotsMap] = useState(TIME_SLOTS_MAP);
   const [schedule, setSchedule] = useState(EMPTY_SCHEDULE);
   const [customSubjects, setCustomSubjects] = useState([]); // matkul tambahan yang diketik manual oleh user
-  const [modal, setModal]       = useState(null); // { day, rowIdx, subject, newSubjectName, room, isEdit, id }
+  const [modal, setModal]       = useState(null); // { day, rowIdx, subject, newSubjectName, room, startTime, endTime, isEdit, id }
   const [loading, setLoading]   = useState(true);
 
   useEffect(() => {
@@ -44,20 +44,34 @@ export default function JadwalPage({ onScheduleChange }) {
   const fetchSchedules = async () => {
     try {
       const res = await api.get('/schedules');
+      
+      const slotsSet = new Map();
+      TIME_SLOTS_MAP.forEach(s => slotsSet.set(`${s.start}-${s.end}`, s));
+      
+      res.data.forEach(sch => {
+        const key = `${sch.startTime}-${sch.endTime}`;
+        if (!slotsSet.has(key)) {
+          slotsSet.set(key, { start: sch.startTime, end: sch.endTime, label: `${sch.startTime}–${sch.endTime}` });
+        }
+      });
+      
+      const sortedSlots = Array.from(slotsSet.values()).sort((a, b) => a.start.localeCompare(b.start));
+      setTimeSlotsMap(sortedSlots);
+      
       const newSchedule = {
-        Senin: [null, null, null, null],
-        Selasa: [null, null, null, null],
-        Rabu: [null, null, null, null],
-        Kamis: [null, null, null, null],
-        Jumat: [null, null, null, null],
+        Senin: Array(sortedSlots.length).fill(null),
+        Selasa: Array(sortedSlots.length).fill(null),
+        Rabu: Array(sortedSlots.length).fill(null),
+        Kamis: Array(sortedSlots.length).fill(null),
+        Jumat: Array(sortedSlots.length).fill(null),
       };
       
       const customSubs = new Set();
       
       res.data.forEach((sch) => {
-        const rowIdx = TIME_SLOTS_MAP.findIndex(t => t.start === sch.startTime);
+        const rowIdx = sortedSlots.findIndex(t => t.start === sch.startTime && t.end === sch.endTime);
         if (rowIdx !== -1 && newSchedule[sch.day]) {
-          newSchedule[sch.day][rowIdx] = { id: sch.id, subject: sch.subject, room: sch.room };
+          newSchedule[sch.day][rowIdx] = { id: sch.id, subject: sch.subject, room: sch.room, startTime: sch.startTime, endTime: sch.endTime };
           if (!SUBJECTS.includes(sch.subject)) {
             customSubs.add(sch.subject);
           }
@@ -77,7 +91,18 @@ export default function JadwalPage({ onScheduleChange }) {
 
   const openCell = (day, rowIdx) => {
     const cls = schedule[day][rowIdx];
-    setModal({ day, rowIdx, id: cls?.id, subject: cls?.subject || subjectOptions[0], newSubjectName: "", room: cls?.room || "", isEdit: !!cls });
+    const slot = timeSlotsMap[rowIdx];
+    setModal({ 
+      day, 
+      rowIdx, 
+      id: cls?.id, 
+      subject: cls?.subject || subjectOptions[0], 
+      newSubjectName: "", 
+      room: cls?.room || "", 
+      startTime: cls?.startTime || slot.start,
+      endTime: cls?.endTime || slot.end,
+      isEdit: !!cls 
+    });
   };
 
   const saveCell = async () => {
@@ -86,12 +111,11 @@ export default function JadwalPage({ onScheduleChange }) {
     if (!finalSubject) return;
 
     try {
-      const timeSlot = TIME_SLOTS_MAP[modal.rowIdx];
       const payload = {
         subject: finalSubject,
         day: modal.day,
-        startTime: timeSlot.start,
-        endTime: timeSlot.end,
+        startTime: modal.startTime,
+        endTime: modal.endTime,
         room: modal.room || "—"
       };
 
@@ -157,9 +181,9 @@ export default function JadwalPage({ onScheduleChange }) {
             </div>
           ))}
         </div>
-        {timeSlots.map((time, rowIdx) => (
-          <div key={time} className="grid grid-cols-6 border-b border-border last:border-b-0 min-w-[720px]">
-            <div className="p-4 text-xs text-muted-foreground" style={{ fontFamily: "'DM Mono', monospace" }}>{time}</div>
+        {timeSlotsMap.map((slot, rowIdx) => (
+          <div key={slot.label} className="grid grid-cols-6 border-b border-border last:border-b-0 min-w-[720px]">
+            <div className="p-4 text-xs text-muted-foreground" style={{ fontFamily: "'DM Mono', monospace" }}>{slot.label}</div>
             {days.map((day) => {
               const cls = schedule[day][rowIdx];
               return (
@@ -191,7 +215,7 @@ export default function JadwalPage({ onScheduleChange }) {
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-40 p-4" onClick={() => setModal(null)}>
           <div className="bg-card rounded-2xl border border-border p-5 w-full max-w-sm space-y-4" onClick={(e) => e.stopPropagation()}>
             <h3 className="font-bold text-foreground text-sm">
-              {modal.isEdit ? "Edit" : "Tambah"} Jadwal — {modal.day}, {timeSlots[modal.rowIdx]}
+              {modal.isEdit ? "Edit" : "Tambah"} Jadwal — {modal.day}, {timeSlotsMap[modal.rowIdx]?.label}
             </h3>
             <div className="space-y-3">
               <div>
@@ -222,6 +246,26 @@ export default function JadwalPage({ onScheduleChange }) {
                   placeholder="Contoh: G-201 / Lab A"
                   className="w-full mt-1 px-3 py-2 bg-background border border-border rounded-lg text-sm outline-none focus:border-violet-400 text-foreground placeholder-muted-foreground"
                 />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-semibold text-muted-foreground">Waktu Mulai</label>
+                  <input
+                    type="time"
+                    value={modal.startTime}
+                    onChange={(e) => setModal((m) => ({ ...m, startTime: e.target.value }))}
+                    className="w-full mt-1 px-3 py-2 bg-background border border-border rounded-lg text-sm outline-none focus:border-violet-400 text-foreground"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-muted-foreground">Waktu Selesai</label>
+                  <input
+                    type="time"
+                    value={modal.endTime}
+                    onChange={(e) => setModal((m) => ({ ...m, endTime: e.target.value }))}
+                    className="w-full mt-1 px-3 py-2 bg-background border border-border rounded-lg text-sm outline-none focus:border-violet-400 text-foreground"
+                  />
+                </div>
               </div>
             </div>
             <div className="flex items-center gap-2 pt-1">
