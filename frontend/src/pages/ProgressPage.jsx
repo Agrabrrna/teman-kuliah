@@ -93,7 +93,7 @@ export default function ProgressPage() {
 
   return (
     <div className="max-w-5xl space-y-5">
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {[
           { label:"Tugas Selesai", value:`${completedTodos} / ${totalTodos}`, sub:`~${estimatedHours} jam dedikasi`,          icon:Clock,  color:"text-violet-600 bg-violet-100" },
           { label:"Nilai Rata-rata",   value:String(rataRata),   sub:"Berdasarkan Kuis/Tugas", icon:Star,   color:"text-amber-600 bg-amber-100" },
@@ -108,7 +108,7 @@ export default function ProgressPage() {
         ))}
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="bg-card rounded-xl border border-border p-5">
           <h3 className="font-bold text-foreground text-sm mb-4">Jam Belajar Minggu Ini</h3>
           <SimpleBarChart data={weeklyData} xKey="day" yKey="jam" />
