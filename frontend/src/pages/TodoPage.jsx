@@ -86,7 +86,7 @@ export default function TodoPage() {
 
       <div className="flex gap-1 p-1 bg-muted rounded-lg w-fit">
         {["all","active","done"].map((f) => (
-          <button key={f} onClick={() => setFilter(f)} className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${filter===f ? "bg-white text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
+          <button key={f} onClick={() => setFilter(f)} className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${filter===f ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
             {f==="all" ? "Semua" : f==="active" ? "Aktif" : "Selesai"}
           </button>
         ))}
