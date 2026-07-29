@@ -1,10 +1,16 @@
-import React from 'react';
-import { NavLink, Outlet, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Users, HelpCircle, LogOut } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
+import { LayoutDashboard, Users, LogOut, Menu, X } from 'lucide-react';
 import ThemeToggle from './ThemeToggle';
 
 export default function AdminLayout({ user, onLogout }) {
   const navigate = useNavigate();
+  const location = useLocation();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  useEffect(() => {
+    setSidebarOpen(false);
+  }, [location]);
 
   const handleLogout = () => {
     onLogout();
@@ -12,9 +18,21 @@ export default function AdminLayout({ user, onLogout }) {
   };
 
   return (
-    <div className="flex h-screen bg-background text-foreground transition-colors overflow-hidden">
+    <div className="flex h-screen bg-background text-foreground transition-colors overflow-hidden relative">
+      {/* Mobile Sidebar Overlay */}
+      <div
+        className={`fixed inset-0 bg-black/50 z-30 transition-opacity lg:hidden ${
+          sidebarOpen ? "opacity-100" : "opacity-0 pointer-events-none"
+        }`}
+        onClick={() => setSidebarOpen(false)}
+      />
+
       {/* Sidebar */}
-      <aside className="w-64 bg-card border-r border-border flex flex-col transition-colors z-20">
+      <aside
+        className={`fixed inset-y-0 left-0 w-64 bg-card border-r border-border flex flex-col transition-transform duration-300 z-40 lg:relative lg:translate-x-0 ${
+          sidebarOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
         <div className="p-6">
           <h1 className="text-xl font-black bg-gradient-to-r from-violet-400 to-cyan-400 bg-clip-text text-transparent flex items-center gap-2">
             TemanKuliah
@@ -55,8 +73,14 @@ export default function AdminLayout({ user, onLogout }) {
       </aside>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col min-w-0 bg-background">
-        <header className="h-16 flex-shrink-0 border-b border-border bg-card/50 backdrop-blur-sm flex items-center px-6 justify-end sticky top-0 z-10">
+      <div className="flex-1 flex flex-col min-w-0 bg-background h-full overflow-hidden">
+        <header className="h-16 flex-shrink-0 border-b border-border bg-card/50 backdrop-blur-sm flex items-center px-4 lg:px-6 justify-between lg:justify-end sticky top-0 z-10">
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="lg:hidden p-2 -ml-2 rounded-lg text-muted-foreground hover:bg-muted focus:outline-none"
+          >
+            <Menu size={24} />
+          </button>
           <ThemeToggle />
         </header>
         <main className="flex-1 overflow-y-auto p-6 scroll-smooth">

@@ -63,15 +63,7 @@ function MainApp({ user, onLogout, onUpdateUser }) {
         />
         <main className="flex-1 p-4 lg:p-6 overflow-y-auto">
           <Routes>
-          {/* Admin Routes */}
-          {user?.role === 'ADMIN' && (
-            <Route path="/admin" element={<AdminLayout user={user} onLogout={onLogout} />}>
-              <Route index element={<AdminDashboardPage />} />
-              <Route path="users" element={<AdminUsersPage />} />
-              <Route path="*" element={<Navigate to="/admin" replace />} />
-            </Route>
-          )}
-
+          {/* Admin Routes - should ideally be handled at App level, but if kept here, ensure no double layout. For now we remove it from MainApp */}
           {/* User Routes */}
           {user?.role !== 'ADMIN' && (
             <>
@@ -151,6 +143,19 @@ export default function App() {
         <Route path="/login" element={<LoginPage onLogin={login} />} />
         <Route path="/register" element={<RegisterPage onLogin={login} />} />
         <Route path="*" element={<Navigate to="/login" replace />} />
+      </Routes>
+    );
+  }
+
+  if (user.role === 'ADMIN') {
+    return (
+      <Routes>
+        <Route path="/admin" element={<AdminLayout user={user} onLogout={logout} />}>
+          <Route index element={<AdminDashboardPage />} />
+          <Route path="users" element={<AdminUsersPage />} />
+          <Route path="*" element={<Navigate to="/admin" replace />} />
+        </Route>
+        <Route path="*" element={<Navigate to="/admin" replace />} />
       </Routes>
     );
   }
